@@ -1,0 +1,51 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+.npm
+*.log
+
+# Local SQLite dev database (see backend/.env)
+*.db
+*.db-journal
+*.sqlite3
+
+# Docker volumes
+pgdata/
+
+# ML models (large files — download at runtime)
+# NOTE: must stay anchored/scoped — a bare `models/` also matches
+# backend/app/models/, which is application source code.
+*.bin
+*.pt
+*.safetensors
+/models/
+backend/.cache/
+.cache/huggingface/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp

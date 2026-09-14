@@ -1,0 +1,260 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  Theme tokens.
+
+  Every colour in the product resolves through one of these variables, stored as
+  a bare "R G B" triple so Tailwind's `rgb(var(--x) / <alpha-value>)` form keeps
+  working — `bg-brand/10` has to stay available, and a hex value in a variable
+  cannot produce one.
+
+  Light is the default declaration; dark overrides it under [data-theme="dark"].
+  The attribute is set on <html> before first paint by a script in the layout,
+  so there is no flash of the wrong theme.
+*/
+
+:root {
+  --bg: 246 248 251;
+  --bg-alt: 241 244 249;
+  --surface: 255 255 255;
+  --surface-2: 244 247 251;
+  --surface-3: 235 240 247;
+  --bdr: 226 232 240;
+  --bdr-strong: 203 213 225;
+
+  --ink: 15 23 42;
+  --ink-2: 71 85 105;
+  --ink-3: 138 152 171;
+
+  --brand: 37 99 235;
+  --brand-soft: 219 234 254;
+  --accent: 124 58 237;
+
+  --success: 22 163 74;
+  --danger: 225 29 72;
+  --warn: 217 119 6;
+  --info: 2 132 199;
+
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
+  --shadow-pop: 0 12px 32px -8px rgba(15, 23, 42, 0.18);
+  --grid-line: rgba(15, 23, 42, 0.06);
+
+  color-scheme: light;
+}
+
+[data-theme="dark"] {
+  --bg: 13 17 23;
+  --bg-alt: 17 22 30;
+  --surface: 22 27 34;
+  --surface-2: 28 35 45;
+  --surface-3: 35 44 57;
+  --bdr: 37 48 63;
+  --bdr-strong: 55 71 92;
+
+  --ink: 230 237 243;
+  --ink-2: 154 169 188;
+  --ink-3: 107 122 143;
+
+  --brand: 88 140 255;
+  --brand-soft: 27 44 84;
+  --accent: 167 139 250;
+
+  --success: 52 211 153;
+  --danger: 251 113 133;
+  --warn: 251 191 36;
+  --info: 56 189 248;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-pop: 0 16px 40px -12px rgba(0, 0, 0, 0.7);
+  --grid-line: rgba(230, 237, 243, 0.06);
+
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  /* Only colours cross-fade on a theme switch. Transitioning `all` would also
+     animate layout properties, so every width and position would slide for
+     300ms every time the toggle is pressed. */
+  transition: background-color 220ms ease, color 220ms ease;
+}
+
+body {
+  background: rgb(var(--bg));
+  color: rgb(var(--ink));
+  font-size: 14px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  transition: background-color 220ms ease, color 220ms ease;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgb(var(--bdr-strong));
+  border-radius: 6px;
+  border: 3px solid rgb(var(--bg));
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--ink-3));
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--brand));
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.recharts-wrapper:focus,
+.recharts-surface:focus {
+  outline: none;
+}
+
+/* ── Motion ────────────────────────────────────────────────────────────────
+   Animations are short and mostly entrance-only. A dashboard that keeps moving
+   after it has settled is harder to read, not livelier — the only thing that
+   loops is the live indicator, because that one is reporting a fact. */
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgb(var(--success) / 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 7px rgb(var(--success) / 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgb(var(--success) / 0);
+  }
+}
+
+@keyframes sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+@keyframes slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.animate-fade-in {
+  animation: fade-in 260ms ease both;
+}
+.animate-slide-in {
+  animation: slide-in-left 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Stagger helper: children enter in sequence rather than all at once, which
+   makes a dense grid legible as it appears instead of arriving as one block. */
+.stagger > * {
+  animation: fade-up 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.stagger > *:nth-child(1) { animation-delay: 0ms; }
+.stagger > *:nth-child(2) { animation-delay: 45ms; }
+.stagger > *:nth-child(3) { animation-delay: 90ms; }
+.stagger > *:nth-child(4) { animation-delay: 135ms; }
+.stagger > *:nth-child(5) { animation-delay: 180ms; }
+.stagger > *:nth-child(6) { animation-delay: 225ms; }
+.stagger > *:nth-child(7) { animation-delay: 270ms; }
+.stagger > *:nth-child(8) { animation-delay: 315ms; }
+
+/* Skeletons are shaped like the content that is coming, so nothing shifts. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgb(var(--surface-2));
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(var(--ink) / 0.05),
+    transparent
+  );
+  animation: shimmer 1.5s infinite;
+}
+
+/* Top-of-page progress sweep while a background refetch is in flight. */
+.refetch-bar {
+  position: absolute;
+  left: 0;
+  bottom: -1px;
+  height: 2px;
+  width: 25%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(var(--brand)),
+    transparent
+  );
+  animation: sweep 1.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
