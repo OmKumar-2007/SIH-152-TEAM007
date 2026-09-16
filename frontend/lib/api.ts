@@ -1,7 +1,7 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 export const api = axios.create({
   baseURL: `${BASE}/api/v1`,
@@ -155,7 +155,29 @@ export const ingestApi = {
   stats: () => api.get<IngestionStats>("/ingest/stats"),
   trigger: () => api.post<{ status: string; task_id: string }>("/ingest/trigger"),
   modelStatus: () => api.get<ModelStatus[]>("/ingest/model-status"),
+  running: () => api.get<IngestionState>("/ingest/running"),
+  triggerRedditHistorical: () => api.post<{ status: string; message: string }>("/ingest/reddit/historical"),
+  redditHistoricalStatus: () => api.get<RedditHistoricalState>("/ingest/reddit/historical/status"),
 };
+
+export interface RedditHistoricalState {
+  status: "idle" | "running" | "success" | "failed";
+  started_at: string | null;
+  finished_at: string | null;
+  last_refresh_at: string | null;
+  next_refresh_at: string | null;
+  source: string;
+  mode: string;
+  subreddits_total: number;
+  subreddits_processed: number;
+  subreddits_failed: number;
+  posts_fetched: number;
+  posts_inserted: number;
+  duplicates: number;
+  keyword_matches: number;
+  errors: number;
+  reason: string | null;
+}
 
 // ── Types (mirroring backend schemas) ────────────────────────────────────────
 
@@ -463,6 +485,16 @@ export interface IngestionStats {
   nlp_coverage: number;
   per_platform: PlatformIngestionStat[];
   generated_at: string;
+}
+
+export interface IngestionState {
+  is_running: boolean;
+  status: "idle" | "running" | "success" | "failed";
+  last_started_at: string | null;
+  last_completed_at: string | null;
+  new_records: number;
+  records_by_platform: Record<string, { status: string; new_records: number; reason?: string }>;
+  error: string | null;
 }
 
 export interface NetworkNode {

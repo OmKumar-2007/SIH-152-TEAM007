@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { usePathname } from "next/navigation";
 import {
@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 
 import { cn, fmtNumber } from "@/lib/utils";
-import { useDashboard } from "@/lib/queries";
+import { useDashboard, useTriggerIngestion, useIngestionStatus, useRedditHistoricalStatus, useTriggerRedditHistorical } from "@/lib/queries";
 import { useTheme, type Theme } from "@/components/theme-provider";
 import { Badge, Button, LivePill } from "@/components/ui";
 
@@ -162,6 +162,9 @@ export function Topbar() {
 
           <ThemeToggle />
 
+          <IngestionButton />
+          <HistoricalRedditButton />
+
           <Button
             onClick={() => client.invalidateQueries()}
             loading={fetching > 0}
@@ -263,4 +266,188 @@ function Stat({
   );
 }
 
+function IngestionButton() {
+  const { data: status } = useIngestionStatus();
+  const trigger = useTriggerIngestion();
+  const client = useQueryClient();
+  const [open, setOpen] = useState(false);
+
+  const isRunning = status?.is_running;
+  const isSuccess = status?.status === "success" && !isRunning;
+  const isFailed = status?.status === "failed" && !isRunning;
+  const hasDetails = (isSuccess || isFailed) && status?.records_by_platform && Object.keys(status.records_by_platform).length > 0;
+
+  // Whenever the status switches from running to success, refresh the dashboard.
+  const prevRunning = useRef(false);
+  useEffect(() => {
+    if (prevRunning.current && !isRunning && status?.status === "success") {
+      client.invalidateQueries();
+    }
+    prevRunning.current = isRunning || false;
+  }, [isRunning, status?.status, client]);
+
+  return (
+    <div 
+      className="relative flex items-center"
+      onMouseEnter={() => { if (hasDetails) setOpen(true); }}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <Button
+        onClick={() => {
+          if (!isRunning) trigger.mutate();
+        }}
+        disabled={isRunning}
+        title="Start Data Ingestion Pipeline"
+      >
+        {isRunning ? (
+          <>
+            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            <span className="hidden sm:inline">Ingestion Running...</span>
+          </>
+        ) : isFailed ? (
+          <>
+            <AlertTriangle className="w-3.5 h-3.5 text-danger" />
+            <span className="hidden sm:inline">⚠ Ingestion Failed</span>
+          </>
+        ) : isSuccess ? (
+          <>
+            <Check className="w-3.5 h-3.5 text-green-500" />
+            <span className="hidden sm:inline">✓ Ingestion Complete — {status?.new_records || 0} new posts</span>
+          </>
+        ) : (
+          <>
+            <Database className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">▶ Start Live Ingestion</span>
+          </>
+        )}
+      </Button>
+
+      {open && hasDetails && (
+        <div className="absolute right-0 top-full mt-1.5 w-64 bg-surface border border-bdr rounded-xl shadow-pop p-2 z-50 animate-fade-in flex flex-col gap-2">
+          {Object.entries(status.records_by_platform).map(([plat, info]) => (
+            <div key={plat} className="flex flex-col text-xs px-1">
+              <div className="flex items-center justify-between">
+                <span className="flex items-center gap-1.5 font-medium capitalize text-ink">
+                  {info.status === "success" ? <Check className="w-3.5 h-3.5 text-green-500" /> : 
+                   info.status === "unavailable" ? <AlertTriangle className="w-3.5 h-3.5 text-amber-500" /> :
+                   <AlertTriangle className="w-3.5 h-3.5 text-danger" />}
+                  {plat}
+                </span>
+                <span className="text-ink-2 tabular-nums font-medium">
+                  {info.status === "success" ? `${info.new_records} new` : info.status}
+                </span>
+              </div>
+              {info.reason && <span className="text-[10px] text-ink-3 ml-5">{info.reason}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function HistoricalRedditButton() {
+  const { data: status } = useRedditHistoricalStatus();
+  const trigger = useTriggerRedditHistorical();
+  const client = useQueryClient();
+  const [open, setOpen] = useState(false);
+
+  const isRunning = status?.status === "running";
+  const isSuccess = status?.status === "success" && !isRunning;
+  const isFailed = status?.status === "failed" && !isRunning;
+  const hasDetails = status?.status !== "idle";
+
+  const prevRunning = useRef(false);
+  useEffect(() => {
+    if (prevRunning.current && !isRunning && status?.status === "success") {
+      client.invalidateQueries();
+    }
+    prevRunning.current = isRunning || false;
+  }, [isRunning, status?.status, client]);
+
+  return (
+    <div 
+      className="relative flex items-center ml-2"
+      onMouseEnter={() => { if (hasDetails) setOpen(true); }}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <Button
+        onClick={() => {
+          if (!isRunning) trigger.mutate();
+        }}
+        disabled={isRunning}
+        title="Import Reddit Historical Data via Arctic Shift"
+      >
+        {isRunning ? (
+          <>
+            <RefreshCw className="w-3.5 h-3.5 animate-spin text-brand" />
+            <span className="hidden sm:inline">Importing...</span>
+          </>
+        ) : isFailed ? (
+          <>
+            <AlertTriangle className="w-3.5 h-3.5 text-danger" />
+            <span className="hidden sm:inline">⚠ Import Failed</span>
+          </>
+        ) : isSuccess ? (
+          <>
+            <Check className="w-3.5 h-3.5 text-green-500" />
+            <span className="hidden sm:inline">✓ {status?.posts_inserted || 0} inserted</span>
+          </>
+        ) : (
+          <>
+            <Database className="w-3.5 h-3.5 text-brand" />
+            <span className="hidden sm:inline">▶ Import Reddit Historical</span>
+          </>
+        )}
+      </Button>
+
+      {open && hasDetails && (
+        <div className="absolute right-0 top-full mt-1.5 w-72 bg-surface border border-bdr rounded-xl shadow-pop p-3 z-50 animate-fade-in flex flex-col gap-2">
+          <div className="flex flex-col mb-1 border-b border-bdr pb-2">
+            <span className="text-[13px] font-semibold text-ink">Reddit — Recent Historical</span>
+            <span className="text-[10px] text-ink-3">Source: Arctic Shift</span>
+            {status?.next_refresh_at && (
+              <span className="text-[10px] text-brand font-medium mt-0.5">Auto-refresh: ON</span>
+            )}
+          </div>
+          
+          <div className="grid grid-cols-2 gap-2 text-xs">
+            <div className="flex flex-col">
+              <span className="text-[9px] text-ink-3 uppercase">Status</span>
+              <span className="text-ink font-medium capitalize">{status?.status}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] text-ink-3 uppercase">Subreddits</span>
+              <span className="text-ink font-medium">{status?.subreddits_processed} / {status?.subreddits_total}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] text-ink-3 uppercase">Fetched</span>
+              <span className="text-ink font-medium">{status?.posts_fetched}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] text-ink-3 uppercase">Inserted</span>
+              <span className="text-ink font-medium text-green-500">{status?.posts_inserted}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] text-ink-3 uppercase">Duplicates</span>
+              <span className="text-ink font-medium text-amber-500">{status?.duplicates}</span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[9px] text-ink-3 uppercase">Keyword Matches</span>
+              <span className="text-ink font-medium text-brand">{status?.keyword_matches}</span>
+            </div>
+          </div>
+          
+          {status?.reason && (
+            <div className="mt-1 pt-2 border-t border-bdr text-[10px] text-danger">
+              {status.reason}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export { TITLES };
+

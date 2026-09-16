@@ -32,6 +32,7 @@ import {
   type EmotionBreakdown,
   type IngestionRun,
   type IngestionStats,
+  type IngestionState,
   type InfluentialPost,
   type LiveFeedItem,
   type ModelStatus,
@@ -40,6 +41,7 @@ import {
   type PersonaStats,
   type PersonaSummaryRow,
   type ProfilingCoverage,
+  type RedditHistoricalState,
   type RisingTrend,
   type SegmentDetail,
   type SegmentSummary,
@@ -73,6 +75,7 @@ export const keys = {
   dashboard: ["dashboard", "summary"] as const,
   connectors: ["ingest", "status"] as const,
   ingestStats: ["ingest", "stats"] as const,
+  ingestRunning: ["ingest", "running"] as const,
   models: ["ingest", "models"] as const,
   trends: (limit: number) => ["trends", "list", limit] as const,
   emerging: ["trends", "emerging"] as const,
@@ -105,6 +108,7 @@ export const keys = {
   spread: (days: number, bucketHours: number, topic?: string) =>
     ["diffusion", "spread", days, bucketHours, topic ?? "all"] as const,
   ollama: ["ollama", "status"] as const,
+  redditHistoricalStatus: ["ingest", "reddit-historical", "status"] as const,
 };
 
 type Opts<T> = Omit<UseQueryOptions<T, Error, T, any>, "queryKey" | "queryFn">;
@@ -134,6 +138,24 @@ export function useIngestStats(opts?: Opts<IngestionStats>) {
     queryKey: keys.ingestStats,
     queryFn: async () => (await ingestApi.stats()).data,
     refetchInterval: FREQUENT,
+    ...opts,
+  });
+}
+
+export function useIngestionStatus(opts?: Opts<IngestionState>) {
+  return useQuery({
+    queryKey: keys.ingestRunning,
+    queryFn: async () => (await ingestApi.running()).data,
+    refetchInterval: 3000,
+    ...opts,
+  });
+}
+
+export function useRedditHistoricalStatus(opts?: Opts<RedditHistoricalState>) {
+  return useQuery({
+    queryKey: keys.redditHistoricalStatus,
+    queryFn: async () => (await ingestApi.redditHistoricalStatus()).data,
+    refetchInterval: 3000,
     ...opts,
   });
 }
@@ -420,6 +442,14 @@ export function useTriggerIngestion() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: async () => (await ingestApi.trigger()).data,
+    onSuccess: () => client.invalidateQueries(),
+  });
+}
+
+export function useTriggerRedditHistorical() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async () => (await ingestApi.triggerRedditHistorical()).data,
     onSuccess: () => client.invalidateQueries(),
   });
 }
