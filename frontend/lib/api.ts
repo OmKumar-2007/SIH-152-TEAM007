@@ -1,7 +1,9 @@
 import axios from "axios";
 import Cookies from "js-cookie";
 
-const BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
+// In production the browser uses the same origin and Next.js proxies /api to
+// the private backend. Local development can still provide an explicit URL.
+const BASE = (process.env.NEXT_PUBLIC_API_URL || "").replace(/\/$/, "");
 
 export const api = axios.create({
   baseURL: `${BASE}/api/v1`,
@@ -46,7 +48,9 @@ function describe(error: any): ApiError {
     return new ApiError(
       error?.code === "ECONNABORTED"
         ? "The request timed out. The API may be busy recomputing."
-        : "Cannot reach the API. Is the backend running on " + BASE + "?",
+        : BASE
+        ? "Cannot reach the API. Is the backend running on " + BASE + "?"
+        : "Cannot reach the application API.",
       undefined,
       error?.message
     );
@@ -104,7 +108,12 @@ export const segmentsApi = {
 };
 
 export const trendsApi = {
-  list: (limit = 20) => api.get<{ items: TrendSummary[]; total: number }>(`/trends/?limit=${limit}`),
+  // `unclassified_post_count` is returned by the endpoint and read by the Trends
+  // page; it was simply missing from this type.
+  list: (limit = 20) =>
+    api.get<{ items: TrendSummary[]; total: number; unclassified_post_count?: number }>(
+      `/trends/?limit=${limit}`
+    ),
   emerging: () => api.get<{ items: TrendSummary[]; total: number }>("/trends/emerging"),
   get: (id: number) => api.get<TrendDetail>(`/trends/${id}`),
 };
@@ -459,7 +468,13 @@ export interface SegmentSimulationResponse {
 
 export interface ConnectorStatus {
   platform: string;
-  mode: "mock" | "live";
+  /**
+   * `live` — genuine API data. `synthetic` — the connector's generator, used
+   * when the live API is unconfigured or unauthorised. `unavailable` / `failed`
+   * — neither was possible. `mock` is the retired spelling of `synthetic`,
+   * retained so an older backend still type-checks against this client.
+   */
+  mode: "live" | "synthetic" | "unavailable" | "failed" | "mock";
   is_healthy: boolean;
   /** Pulled by the running backend process — resets to zero on restart. */
   posts_ingested_total: number;

@@ -1,0 +1,10 @@
+{
+  "min_support_posts": 15,
+  "min_cluster_coherence": 0.85,
+  "duplicate_similarity_threshold": 0.90,
+  "promotion_window_hours": 0,
+  "promotion_min_users": 10,
+  "promotion_min_posts": 30,
+  "rejection_dormant_hours": 72,
+  "promotion_min_distinct_authors": 5
+}

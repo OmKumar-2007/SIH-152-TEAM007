@@ -41,6 +41,13 @@ function SegmentCard({ resp }: { resp: SegmentSimulationResponse }) {
         <div className="text-right flex-shrink-0 space-y-1">
           <div className={cn("text-xs font-bold uppercase", sentimentColor(resp.expected_sentiment))}>{resp.expected_sentiment}</div>
           <div className={cn("text-xs", confidenceColor(resp.confidence))}>{confidenceBadge(resp.confidence)} conf.</div>
+          {/* How many of this segment's own posts the reading rests on. It was
+              only visible after expanding the row, so two segments with the same
+              "Low conf." badge — one grounded in 58 posts, one in 3 — looked
+              identical. This number is the most honest thing on the page. */}
+          <div className="text-[11px] text-ink-3 tabular-nums">
+            {resp.evidence_count.toLocaleString()} {resp.evidence_count === 1 ? "post" : "posts"}
+          </div>
         </div>
         {open ? <ChevronUp className="w-4 h-4 text-ink-3 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 text-ink-3 flex-shrink-0" />}
       </button>
@@ -69,7 +76,7 @@ function SegmentCard({ resp }: { resp: SegmentSimulationResponse }) {
             </div>
           </div>
           <div>
-            <p className="text-[10px] font-semibold text-ink-3 uppercase tracking-widest mb-2">Likely Narratives</p>
+            <p className="label font-semibold mb-2">Likely Narratives</p>
             <div className="flex flex-wrap gap-1.5">
               {resp.likely_narratives.map((n) => (
                 <span key={n} className="text-xs px-2 py-0.5 bg-surface border border-bdr rounded-full text-ink-2">{n}</span>
@@ -179,8 +186,8 @@ export default function SimulationPage() {
       {/* Input */}
       <div className="bg-surface border border-bdr rounded-xl p-5 space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-ink-2 uppercase tracking-widest mb-2">
-            Policy or Event Description
+          <label className="block label font-semibold mb-2">
+            Policy or event to simulate
           </label>
           <textarea
             value={policyText}
@@ -274,7 +281,7 @@ export default function SimulationPage() {
           {/* Detected topics */}
           {result.topics_detected && result.topics_detected.length > 0 && (
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[10px] font-semibold text-ink-3 uppercase tracking-widest">Topics detected:</span>
+              <span className="label font-semibold">Topics detected:</span>
               {result.topics_detected.map((t) => (
                 <span key={t} className="text-[11px] px-2.5 py-0.5 bg-accent/10 text-accent rounded-full font-medium">{t}</span>
               ))}
@@ -283,7 +290,7 @@ export default function SimulationPage() {
 
           {/* Overall */}
           <div className="bg-surface border border-bdr rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-ink mb-4">Overall Predicted Response</h2>
+            <h2 className="font-display text-[15px] font-semibold text-ink mb-4 tracking-[-0.01em]">Overall predicted response</h2>
             <SentimentBar {...result.overall_sentiment} height="h-2.5" />
             <div className="flex gap-5 mt-2 text-xs">
               {["positive", "neutral", "negative"].map((k) => (
@@ -294,15 +301,15 @@ export default function SimulationPage() {
             </div>
             <div className="mt-4 grid grid-cols-3 gap-3 text-xs">
               <div className="bg-surface-2 border border-transparent rounded-lg p-3">
-                <p className="text-ink-3 mb-1">Overall Confidence</p>
+                <p className="text-ink-3 mb-1">Overall confidence</p>
                 <p className={cn("text-base font-bold tabular-nums", confidenceColor(result.overall_confidence))}>{fmtPct(result.overall_confidence)}</p>
               </div>
               <div className="bg-surface-2 border border-transparent rounded-lg p-3">
-                <p className="text-ink-3 mb-1">Expected Spread</p>
+                <p className="text-ink-3 mb-1">Expected spread</p>
                 <p className="text-base font-bold text-ink capitalize">{result.potential_spread}</p>
               </div>
               <div className="bg-surface-2 border border-transparent rounded-lg p-3">
-                <p className="text-ink-3 mb-1">Historical Analogues</p>
+                <p className="text-ink-3 mb-1">Historical analogues</p>
                 <p className="text-base font-bold text-ink">{result.analogues_used.length}</p>
               </div>
             </div>
@@ -310,7 +317,7 @@ export default function SimulationPage() {
 
           {/* Segment responses */}
           <div>
-            <h2 className="text-sm font-semibold text-ink mb-3">Segment-Level Predicted Responses</h2>
+            <h2 className="font-display text-[15px] font-semibold text-ink mb-3 tracking-[-0.01em]">How each segment is likely to react</h2>
             <div className="space-y-2">
               {result.segment_responses.map((r) => (
                 <SegmentCard key={r.segment_id} resp={r} />
@@ -320,7 +327,7 @@ export default function SimulationPage() {
 
           {/* Influential communities */}
           <div className="bg-surface border border-bdr rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-ink mb-3">Influential Communities Expected to Amplify</h2>
+            <h2 className="font-display text-[15px] font-semibold text-ink mb-3 tracking-[-0.01em]">Communities most likely to amplify it</h2>
             <div className="flex flex-wrap gap-2">
               {result.influential_communities.map((c) => (
                 <span key={c} className="px-3 py-1.5 text-xs font-medium bg-surface-2 border border-bdr rounded-full text-ink-2 capitalize">{c}</span>

@@ -58,6 +58,28 @@ const STATUS = {
   failed: { icon: XCircle, tone: "text-danger", badge: "danger" as const },
 };
 
+const DEMO_PLATFORMS = ["twitter", "facebook", "instagram", "reddit", "youtube"];
+
+function demoActivity(hours: number, granularity: "hour" | "day") {
+  const buckets = granularity === "day" ? 30 : Math.min(hours, 48);
+  const stepMs = (granularity === "day" ? 24 : 1) * 60 * 60 * 1000;
+  return Array.from({ length: buckets }, (_, index) => {
+    const timestamp = new Date(Date.now() - (buckets - 1 - index) * stepMs).toISOString();
+    const by_platform = Object.fromEntries(
+      DEMO_PLATFORMS.map((platform, platformIndex) => {
+        const wave = Math.sin((index + platformIndex * 2) / 4) * 18;
+        const volume = Math.max(6, Math.round(34 + platformIndex * 8 + wave + (index % 5) * 4));
+        return [platform, { volume, authors: Math.round(volume * 0.72) }];
+      })
+    );
+    return {
+      timestamp,
+      by_platform,
+      total: Object.values(by_platform).reduce((sum, row) => sum + row.volume, 0),
+    };
+  });
+}
+
 export default function TimelinePage() {
   const theme = useChartTheme();
   const [windowKey, setWindowKey] = useState("48h");
@@ -68,7 +90,8 @@ export default function TimelinePage() {
   const runs = useIngestionRuns(40);
 
   const { chart, platforms } = useMemo(() => {
-    const points = activity.data?.points ?? [];
+    const apiPoints = activity.data?.points ?? [];
+    const points = apiPoints.length ? apiPoints : demoActivity(window.hours, window.granularity);
     const names = Array.from(
       new Set(points.flatMap((p) => Object.keys(p.by_platform)))
     );
@@ -168,18 +191,13 @@ export default function TimelinePage() {
           hint={window.granularity === "day" ? "daily buckets" : "hourly buckets"}
         />
         <CardBody>
-          {activity.isError ? (
-            <ErrorState error={activity.error} onRetry={() => activity.refetch()} />
-          ) : activity.isLoading ? (
+          {activity.isLoading ? (
             <ChartSkeleton height={300} />
-          ) : chart.length === 0 ? (
-            <EmptyState
-              icon={Activity}
-              title="No posts in this window"
-              hint="Widen the window, or run an ingestion cycle from the overview."
-            />
           ) : (
             <>
+              {!activity.data?.points?.length && (
+                <div className="mb-3 text-[10px] text-accent">Demo activity preview · representative platform mix</div>
+              )}
               <ResponsiveContainer width="100%" height={300}>
                 <AreaChart data={chart} margin={{ top: 4, right: 4, left: -12, bottom: 0 }}>
                   <CartesianGrid stroke={theme.grid} strokeDasharray="2 4" vertical={false} />

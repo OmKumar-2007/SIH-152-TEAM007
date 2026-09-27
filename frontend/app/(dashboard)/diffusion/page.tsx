@@ -95,6 +95,23 @@ const SHAPE_META: Record<
   },
 };
 
+const DEMO_CASCADES: Cascade[] = [
+  { root_author: "demo-a", root_ts: new Date().toISOString(), size: 428, depth: 6, breadth: 94, unique_authors: 311, platforms: ["twitter", "reddit", "youtube"], cross_platform: true, duration_hours: 9.5, velocity_per_hour: 45.1, root_sentiment: "neutral", sentiment_drift: -0.08, shape: "viral", topic: "Digital public infrastructure" },
+  { root_author: "demo-b", root_ts: new Date().toISOString(), size: 286, depth: 3, breadth: 127, unique_authors: 238, platforms: ["facebook", "instagram"], cross_platform: true, duration_hours: 14.2, velocity_per_hour: 20.1, root_sentiment: "positive", sentiment_drift: 0.06, shape: "broadcast", topic: "Education reform" },
+  { root_author: "demo-c", root_ts: new Date().toISOString(), size: 174, depth: 8, breadth: 31, unique_authors: 96, platforms: ["reddit", "twitter"], cross_platform: true, duration_hours: 21.8, velocity_per_hour: 8.0, root_sentiment: "neutral", sentiment_drift: -0.03, shape: "conversation", topic: "Air quality measures" },
+  { root_author: "demo-d", root_ts: new Date().toISOString(), size: 119, depth: 4, breadth: 42, unique_authors: 88, platforms: ["youtube"], cross_platform: false, duration_hours: 11.3, velocity_per_hour: 10.5, root_sentiment: "positive", sentiment_drift: 0.04, shape: "mixed", topic: "Healthcare access" },
+];
+
+const DEMO_SUMMARY: SpreadSummary = {
+  cascade_count: 24,
+  mean_depth: 4.8,
+  max_depth: 9,
+  cross_platform_share: 0.63,
+  shapes: { viral: 6, broadcast: 8, conversation: 5, mixed: 5 },
+  mean_sentiment_drift: -0.02,
+  largest_cascade_size: 428,
+};
+
 export default function DiffusionPage() {
   const [days, setDays] = useState(7);
 
@@ -102,7 +119,9 @@ export default function DiffusionPage() {
   const spread = useSpread(days, 3);
   const recompute = useRecomputeDiffusion();
 
-  const summary = cascades.data?.summary;
+  const hasCascades = Boolean(cascades.data?.items?.length);
+  const summary = hasCascades ? cascades.data?.summary : DEMO_SUMMARY;
+  const cascadeItems = hasCascades ? cascades.data?.items : DEMO_CASCADES;
 
   return (
     <div className="p-5 lg:p-6 space-y-5 animate-fade-up">
@@ -160,7 +179,7 @@ export default function DiffusionPage() {
       />
 
       <CascadeTable
-        cascades={cascades.data?.items}
+        cascades={cascadeItems}
         loading={cascades.isLoading}
         error={cascades.error}
         onRetry={() => cascades.refetch()}
@@ -606,7 +625,7 @@ function CascadeTable({
           <div className="overflow-x-auto -mx-1 px-1">
             <table className="w-full text-sm min-w-[46rem]">
               <thead>
-                <tr className="text-[10px] uppercase tracking-widest text-ink-3 border-b border-bdr">
+                <tr className="label border-b border-bdr">
                   <th className="text-left font-semibold py-2">Shape</th>
                   <th className="text-right font-semibold py-2">Size</th>
                   <th className="text-right font-semibold py-2">Depth</th>

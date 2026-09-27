@@ -44,11 +44,7 @@ const TITLES: Record<string, { title: string; subtitle: string }> = {
   },
   "/audience": {
     title: "Audience",
-    subtitle: "Persona groups, how they react and how they change",
-  },
-  "/segments": {
-    title: "Segments",
-    subtitle: "Behavioural clusters and their generated personas",
+    subtitle: "Persona groups and behavioural segments — who is speaking, and how they change",
   },
   "/network": {
     title: "Topology",
@@ -81,7 +77,7 @@ export function Topbar() {
   const { data, dataUpdatedAt, isError } = useDashboard();
 
   const meta = TITLES[pathname] ?? {
-    title: "SIH Intelligence",
+    title: "NitiNetra",
     subtitle: "Public discourse analytics",
   };
 
@@ -112,7 +108,7 @@ export function Topbar() {
       <div className="flex items-center gap-4 px-5 lg:px-6 py-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-[15px] font-semibold text-ink truncate tracking-tight">
+            <h1 className="font-display text-[16px] font-semibold text-ink truncate tracking-[-0.015em]">
               {meta.title}
             </h1>
             {data?.demo_mode && (
@@ -258,7 +254,7 @@ function Stat({
     <div className="flex items-center gap-2">
       <Icon className="w-3.5 h-3.5 text-ink-3 flex-shrink-0" />
       <div className="leading-tight">
-        <p className="text-[9px] text-ink-3 uppercase tracking-wider">{label}</p>
+        <p className="label">{label}</p>
         <p className="text-[11px] font-semibold text-ink tabular-nums">{value}</p>
         {sub && <p className="text-[9px] text-ink-3 tabular-nums">{sub}</p>}
       </div>

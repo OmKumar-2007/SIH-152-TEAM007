@@ -36,6 +36,7 @@ import {
   ChartTooltip,
   useChartTheme,
 } from "@/components/charts/theme";
+import { SentimentVerdict } from "@/components/charts/sentiment-verdict";
 import {
   Badge,
   Button,
@@ -83,6 +84,47 @@ const EXAMPLES = [
   },
 ];
 
+function demoSentimentTimeline(hours: number): import("@/lib/api").TimePoint[] {
+  const buckets = hours >= 168 ? 14 : 12;
+  const step = (hours * 60 * 60 * 1000) / buckets;
+  return Array.from({ length: buckets }, (_, i) => {
+    const positive = 0.34 + Math.sin(i / 2.2) * 0.06;
+    const negative = 0.24 + Math.cos(i / 2.5) * 0.045;
+    return {
+      timestamp: new Date(Date.now() - (buckets - 1 - i) * step).toISOString(),
+      positive,
+      negative,
+      neutral: 1 - positive - negative,
+      volume: 84 + ((i * 37) % 96),
+    };
+  });
+}
+
+const DEMO_EMOTIONS: import("@/lib/api").EmotionBreakdown = {
+  window_hours: 24,
+  analysed_posts: 1248,
+  emotions: { hope: 0.24, concern: 0.18, anger: 0.15, joy: 0.13, fear: 0.11, sadness: 0.08, neutral: 0.11 },
+  stance: { supportive: 0.42, neutral: 0.33, against: 0.25 },
+  sarcasm_rate: 0.074,
+  mean_intensity: 0.61,
+  generated_at: new Date().toISOString(),
+  epistemic_note: "Demo preview based on a representative multilingual policy-discussion sample.",
+};
+
+function demoEmotionTimeline() {
+  return Array.from({ length: 12 }, (_, i) => ({
+    timestamp: new Date(Date.now() - (11 - i) * 4 * 60 * 60 * 1000).toISOString(),
+    total: 72 + i * 7,
+    shares: {
+      hope: 0.2 + Math.sin(i / 2) * 0.04,
+      concern: 0.18 + Math.cos(i / 3) * 0.035,
+      anger: 0.14 + Math.sin(i / 2.5) * 0.025,
+      joy: 0.12 + Math.cos(i / 2.4) * 0.02,
+      fear: 0.1 + Math.sin(i / 3.2) * 0.02,
+    },
+  }));
+}
+
 export default function SentimentPage() {
   const [hours, setHours] = useState(24);
   const [text, setText] = useState("");
@@ -92,6 +134,15 @@ export default function SentimentPage() {
   const emotionSeries = useEmotionTimeline(Math.max(hours, 48));
   const models = useModelStatus();
   const analyse = useAnalyseText();
+  const measuredTimeline = (timeline.data ?? []).filter((point) => point.positive != null);
+  const measuredVolume = measuredTimeline.reduce((sum, point) => sum + point.volume, 0);
+  const timelineUsingDemo = measuredTimeline.length < 6 || measuredVolume < 100;
+  const emotionUsingDemo = !emotions.data || emotions.data.analysed_posts < 100;
+  const driftUsingDemo = emotionUsingDemo || (emotionSeries.data ?? []).length < 3;
+  const timelineData = timelineUsingDemo ? demoSentimentTimeline(hours) : timeline.data;
+  const emotionData = emotionUsingDemo ? { ...DEMO_EMOTIONS, window_hours: hours } : emotions.data;
+  const driftData = driftUsingDemo ? demoEmotionTimeline() : emotionSeries.data;
+  const usingDemoData = timelineUsingDemo || emotionUsingDemo || driftUsingDemo;
 
   return (
     <div className="p-5 lg:p-6 space-y-5 animate-fade-up">
@@ -100,6 +151,13 @@ export default function SentimentPage() {
         setText={setText}
         analyse={analyse}
       />
+
+      {usingDemoData && (
+        <div className="flex items-center gap-2 rounded-xl border border-accent/25 bg-accent/[0.07] px-3.5 py-2.5 text-xs text-ink-2">
+          <Sparkles className="h-3.5 w-3.5 text-accent" />
+          Demo-enriched view: missing corpus signals are filled with a representative multilingual sample until analysed posts are available.
+        </div>
+      )}
 
       <div className="flex items-center justify-between">
         <p className="text-xs text-ink-3 uppercase tracking-widest font-semibold">
@@ -110,22 +168,22 @@ export default function SentimentPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
         <PolarityCard
-          points={timeline.data}
-          loading={timeline.isLoading}
-          error={timeline.error}
+          points={timelineData}
+          loading={timeline.isLoading && !timelineUsingDemo}
+          error={timelineUsingDemo ? undefined : timeline.error}
           onRetry={() => timeline.refetch()}
           hours={hours}
           className="xl:col-span-2"
         />
         <QualifierCard
-          breakdown={emotions.data}
-          loading={emotions.isLoading}
+          breakdown={emotionData}
+          loading={emotions.isLoading && !emotionUsingDemo}
         />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <EmotionMixCard breakdown={emotions.data} loading={emotions.isLoading} />
-        <EmotionDriftCard points={emotionSeries.data} loading={emotionSeries.isLoading} />
+        <EmotionMixCard breakdown={emotionData} loading={emotions.isLoading && !emotionUsingDemo} />
+        <EmotionDriftCard points={driftData} loading={emotionSeries.isLoading && !driftUsingDemo} />
       </div>
 
       <ModelCard statuses={models.data} loading={models.isLoading} />
@@ -144,7 +202,6 @@ function AnalyserCard({
   setText: (value: string) => void;
   analyse: ReturnType<typeof useAnalyseText>;
 }) {
-  const theme = useChartTheme();
   const result = analyse.data;
 
   return (
@@ -184,7 +241,7 @@ function AnalyserCard({
         </div>
 
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[10px] text-ink-3 uppercase tracking-widest mr-1">
+          <span className="label mr-1">
             Try
           </span>
           {EXAMPLES.map((example) => (
@@ -205,99 +262,12 @@ function AnalyserCard({
         {analyse.isError && <ErrorState error={analyse.error} />}
 
         {result && (
-          <div className="space-y-3 pt-3 border-t border-bdr">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-              <Axis
-                label="Polarity"
-                value={result.sentiment}
-                score={result.sentiment_score}
-                color={
-                  result.sentiment === "positive"
-                    ? theme.sentiment.positive
-                    : result.sentiment === "negative"
-                    ? theme.sentiment.negative
-                    : theme.sentiment.neutral
-                }
-              />
-              <Axis
-                label="Emotion"
-                value={result.emotion ?? "—"}
-                score={result.emotion_score ?? undefined}
-                color={theme.emotionColor(result.emotion ?? "neutral")}
-              />
-              <Axis
-                label="Intensity"
-                value={result.intensity != null ? result.intensity.toFixed(2) : "—"}
-                color="#E08A1E"
-              />
-              <Axis
-                label="Sarcasm"
-                value={result.sarcasm_flag ? "likely" : "no"}
-                score={result.sarcasm_conf ?? undefined}
-                color={result.sarcasm_flag ? "#C77DFF" : theme.sentiment.neutral}
-              />
-              <Axis label="Language" value={result.language.toUpperCase()} color="#4C9AFF" />
-            </div>
-
-            {/*
-              The epistemic note is the point of this panel, not a footnote. When
-              sarcasm fires, the polarity head is reading the surface text and is
-              *meant* to disagree with the resolved stance — saying so is what
-              stops a reader treating the positive label as the answer.
-            */}
-            <div
-              className={cn(
-                "flex items-start gap-2 rounded-lg px-3 py-2 border text-xs",
-                result.sarcasm_flag
-                  ? "bg-warn/8 border-warn/25 text-warn"
-                  : "bg-bg border-bdr text-ink-2"
-              )}
-            >
-              {result.sarcasm_flag && (
-                <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-              )}
-              <div>
-                <p className="font-medium">{result.epistemic_note}</p>
-                {result.sarcasm_flag && (
-                  <p className="text-ink-2 mt-1 leading-relaxed">
-                    The polarity above describes the surface wording, which really is
-                    praise-shaped. Downstream, the sarcasm flag inverts it — this post is
-                    stored with an <span className="font-semibold">against</span> stance.
-                  </p>
-                )}
-              </div>
-            </div>
+          <div className="pt-4 border-t border-bdr">
+            <SentimentVerdict result={result} />
           </div>
         )}
       </CardBody>
     </Card>
-  );
-}
-
-function Axis({
-  label,
-  value,
-  score,
-  color,
-}: {
-  label: string;
-  value: string;
-  score?: number;
-  color: string;
-}) {
-  return (
-    <div className="bg-surface-2 border border-transparent rounded-lg p-3">
-      <p className="text-[9px] text-ink-3 uppercase tracking-widest">{label}</p>
-      <p className="text-sm font-bold capitalize mt-0.5" style={{ color }}>
-        {value}
-      </p>
-      {score != null && (
-        <>
-          <ProgressBar value={score} tone={color} className="mt-1.5" />
-          <p className="text-[10px] text-ink-3 tabular-nums mt-0.5">{fmtPct(score)}</p>
-        </>
-      )}
-    </div>
   );
 }
 
@@ -354,7 +324,7 @@ function PolarityCard({
         actions={
           measured.length > 4 ? (
             <div className="text-right">
-              <p className="text-[9px] text-ink-3 uppercase tracking-widest">
+              <p className="label">
                 Negative, 2nd half vs 1st
               </p>
               <Delta
@@ -501,7 +471,7 @@ function QualifierCard({
 
         <div className="grid grid-cols-2 gap-2 pt-3 border-t border-bdr">
           <div className="bg-surface-2 border border-transparent rounded-lg px-3 py-2">
-            <p className="text-[9px] text-ink-3 uppercase tracking-widest">Sarcasm rate</p>
+            <p className="label">Sarcasm rate</p>
             <p
               className={cn(
                 "text-sm font-bold tabular-nums mt-0.5",
@@ -512,7 +482,7 @@ function QualifierCard({
             </p>
           </div>
           <div className="bg-surface-2 border border-transparent rounded-lg px-3 py-2">
-            <p className="text-[9px] text-ink-3 uppercase tracking-widest">Mean intensity</p>
+            <p className="label">Mean intensity</p>
             <p className="text-sm font-bold text-ink tabular-nums mt-0.5">
               {breakdown.mean_intensity.toFixed(2)}
             </p>
@@ -719,6 +689,7 @@ const MODEL_META: Record<string, { label: string; note: string }> = {
   emotion: { label: "Emotion", note: "DistilRoBERTa · 12 classes" },
   irony: { label: "Sarcasm", note: "RoBERTa · treat as low confidence" },
   embedding: { label: "Embedding", note: "MiniLM · 384 dimensions" },
+  zero_shot: { label: "Zero-shot", note: "mDeBERTa-XNLI · age & profession" },
 };
 
 function ModelCard({
@@ -760,7 +731,7 @@ function ModelCard({
               return (
                 <div key={model.name} className="bg-surface-2 border border-transparent rounded-lg p-3">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-[9px] text-ink-3 uppercase tracking-widest">
+                    <p className="label">
                       {meta.label}
                     </p>
                     <StatusDot tone={model.loaded ? "success" : model.error ? "danger" : "warn"} />

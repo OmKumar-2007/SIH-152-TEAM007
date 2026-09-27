@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { NitiNetraMark, NitiNetraWordmark } from "@/components/brand/logo";
 import { toast } from "sonner";
 import { authApi } from "@/lib/api";
 import { saveAuth } from "@/lib/auth";
@@ -49,16 +50,14 @@ export default function LoginPage() {
 
       <div className="relative w-full max-w-md">
         {/* Header */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-surface border border-bdr shadow-card mb-4">
-            <ShieldCheck className="w-7 h-7 text-brand" />
+        <div className="flex flex-col items-center text-center mb-8">
+          <div className="flex items-center gap-3">
+            <NitiNetraMark size={84} className="text-[#1F3A5F] dark:text-ink" />
+            <NitiNetraWordmark className="text-[2rem] text-[#1F3A5F] dark:text-ink" />
           </div>
-          <h1 className="text-2xl font-bold text-ink tracking-tight">SIH Intelligence</h1>
-          <p className="text-ink-2 text-sm mt-1">Social Media Analytics Platform</p>
-          <div className="inline-flex items-center gap-1.5 mt-3 px-3 py-1 bg-brand/10 border border-brand/25 rounded-full">
-            <span className="w-1.5 h-1.5 rounded-full bg-brand animate-pulse" />
-            <span className="text-brand text-xs font-semibold tracking-wider uppercase">Demo Mode</span>
-          </div>
+          <p className="text-ink-2 text-sm mt-3">
+            Public-discourse intelligence for policy decisions
+          </p>
         </div>
 
         {/* Card */}
@@ -117,7 +116,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-xs text-ink-3 mt-6">
-          Smart India Hackathon 2026 · AI Social Media Analytics
+          NitiNetra · Smart India Hackathon 2026
         </p>
       </div>
     </div>

@@ -24,6 +24,12 @@ import {
   useChartTheme,
 } from "@/components/charts/theme";
 import {
+  ForceGraph,
+  communityColor,
+  sentimentFill,
+  type ColorBy,
+} from "@/components/charts/force-graph";
+import {
   Badge,
   Button,
   Card,
@@ -37,313 +43,14 @@ import {
 } from "@/components/ui";
 
 /**
- * Community colours are fixed rather than theme-derived.
+ * The graph itself now lives in `components/charts/force-graph.tsx`.
  *
- * A community's colour is its identity across the graph, the legend, the
- * influencer table and the bridge list; deriving it from the active theme would
- * make the same community change colour when someone flips the toggle, which
- * breaks the one thing the colour is for. These values are chosen to hold up on
- * both backgrounds.
+ * The layout that used to sit here integrated a Fruchterman-Reingold force
+ * into a velocity with no cap on the resulting displacement, so with 120 nodes
+ * every node overshot the canvas and was caught by the position clamp. The
+ * graph rendered as a handful of piles in the corners. See that file for what
+ * replaced it.
  */
-const COMMUNITY_COLORS = [
-  "#3B82F6",
-  "#8B5CF6",
-  "#14B8A6",
-  "#F59E0B",
-  "#EC4899",
-  "#0EA5E9",
-  "#22C55E",
-  "#A855F7",
-];
-
-function communityColor(id: number) {
-  return COMMUNITY_COLORS[id % COMMUNITY_COLORS.length];
-}
-
-const NODE_SENTIMENT: Record<string, string> = {
-  positive: "#22C55E",
-  neutral: "#94A3B8",
-  negative: "#F43F5E",
-};
-
-function sentimentFill(sentiment: string) {
-  return NODE_SENTIMENT[sentiment] ?? NODE_SENTIMENT.neutral;
-}
-
-// ── Force layout ──────────────────────────────────────────────────────────────
-
-interface FNode extends NetworkNode {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-}
-
-function initLayout(nodes: NetworkNode[], w: number, h: number): FNode[] {
-  // Deterministic seeding: an unseeded Math.random layout settles somewhere new
-  // on every render, so the same graph never looks the same twice and a reader
-  // cannot tell a layout change from a data change.
-  const rand = (i: number) => ((i * 2654435761) >>> 0) / 0xffffffff;
-  return nodes.map((node, i) => ({
-    ...node,
-    x: w * 0.15 + rand(i * 3) * w * 0.7,
-    y: h * 0.15 + rand(i * 3 + 1) * h * 0.7,
-    vx: 0,
-    vy: 0,
-  }));
-}
-
-function runTick(
-  nodes: FNode[],
-  edges: { source: string; target: string; weight: number }[],
-  w: number,
-  h: number,
-  alpha: number
-): void {
-  const index: Record<string, number> = {};
-  nodes.forEach((n, i) => {
-    index[n.id] = i;
-  });
-
-  const k = Math.sqrt((w * h) / Math.max(nodes.length, 1));
-
-  for (let i = 0; i < nodes.length; i++) {
-    let fx = 0;
-    let fy = 0;
-    for (let j = 0; j < nodes.length; j++) {
-      if (i === j) continue;
-      const dx = nodes[i].x - nodes[j].x;
-      const dy = nodes[i].y - nodes[j].y;
-      const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-      const force = ((k * k) / dist) * alpha * 0.8;
-      fx += (dx / dist) * force;
-      fy += (dy / dist) * force;
-    }
-    nodes[i].vx += fx;
-    nodes[i].vy += fy;
-  }
-
-  for (const edge of edges) {
-    const si = index[edge.source];
-    const ti = index[edge.target];
-    if (si == null || ti == null) continue;
-    const dx = nodes[ti].x - nodes[si].x;
-    const dy = nodes[ti].y - nodes[si].y;
-    const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-    const force = ((dist - k) / dist) * alpha * 0.35 * Math.log1p(edge.weight);
-    nodes[si].vx += (dx / dist) * force;
-    nodes[si].vy += (dy / dist) * force;
-    nodes[ti].vx -= (dx / dist) * force;
-    nodes[ti].vy -= (dy / dist) * force;
-  }
-
-  const cx = w / 2;
-  const cy = h / 2;
-  for (const node of nodes) {
-    node.vx += (cx - node.x) * 0.008 * alpha;
-    node.vy += (cy - node.y) * 0.008 * alpha;
-  }
-
-  const damping = 0.88;
-  for (const node of nodes) {
-    node.vx *= damping;
-    node.vy *= damping;
-    node.x = Math.max(14, Math.min(w - 14, node.x + node.vx));
-    node.y = Math.max(14, Math.min(h - 14, node.y + node.vy));
-  }
-}
-
-type ColorBy = "community" | "platform" | "sentiment";
-
-function GraphCanvas({
-  graph,
-  colorBy,
-  highlight,
-}: {
-  graph: NetworkGraph;
-  colorBy: ColorBy;
-  highlight: string | null;
-}) {
-  const [nodes, setNodes] = useState<FNode[]>([]);
-  const [hovered, setHovered] = useState<string | null>(null);
-  const [selected, setSelected] = useState<FNode | null>(null);
-  const frame = useRef(0);
-  const alpha = useRef(1);
-  const live = useRef<FNode[]>([]);
-  const W = 760;
-  const H = 500;
-
-  useEffect(() => {
-    const initial = initLayout(graph.nodes, W, H);
-    live.current = initial;
-    setNodes([...initial]);
-    alpha.current = 1;
-
-    let tick = 0;
-    function animate() {
-      if (alpha.current < 0.01) return;
-      runTick(live.current, graph.edges, W, H, alpha.current);
-      alpha.current *= 0.97;
-      tick += 1;
-      // Repainting every third tick keeps the simulation smooth without
-      // committing 60 React renders a second for a layout nobody is reading yet.
-      if (tick % 3 === 0) setNodes([...live.current]);
-      frame.current = requestAnimationFrame(animate);
-    }
-    frame.current = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frame.current);
-  }, [graph]);
-
-  const byId = useMemo(() => {
-    const map: Record<string, FNode> = {};
-    nodes.forEach((n) => {
-      map[n.id] = n;
-    });
-    return map;
-  }, [nodes]);
-
-  const neighbours = useMemo(() => {
-    const focus = selected?.id ?? hovered ?? highlight;
-    if (!focus) return null;
-    const set = new Set<string>([focus]);
-    for (const edge of graph.edges) {
-      if (edge.source === focus) set.add(edge.target);
-      if (edge.target === focus) set.add(edge.source);
-    }
-    return set;
-  }, [selected, hovered, highlight, graph.edges]);
-
-  function nodeColor(node: FNode) {
-    if (colorBy === "community") return communityColor(node.community_id);
-    if (colorBy === "platform") return platformColor(node.platform);
-    return sentimentFill(node.dominant_sentiment);
-  }
-
-  function nodeRadius(node: FNode) {
-    return 4 + Math.sqrt(node.post_count) * 0.9 + node.pagerank * 12;
-  }
-
-  const focusNode = selected ?? (hovered ? byId[hovered] : null);
-
-  return (
-    <div className="relative">
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="w-full rounded-xl border border-transparent bg-surface-2"
-        style={{ maxHeight: 500 }}
-        onClick={(e) => {
-          if (e.target === e.currentTarget) setSelected(null);
-        }}
-      >
-        <g>
-          {graph.edges.map((edge, i) => {
-            const s = byId[edge.source];
-            const t = byId[edge.target];
-            if (!s || !t) return null;
-            // Dimming everything outside the focused node's neighbourhood is what
-            // makes a 120-node hairball readable: the question is almost always
-            // "who is this one connected to", not "what does the whole graph look
-            // like".
-            const inFocus =
-              !neighbours || (neighbours.has(edge.source) && neighbours.has(edge.target));
-            return (
-              <line
-                key={i}
-                x1={s.x}
-                y1={s.y}
-                x2={t.x}
-                y2={t.y}
-                stroke={inFocus ? "#44618F" : "#1E2C42"}
-                strokeWidth={Math.min(edge.weight * 0.6, 2.5)}
-                opacity={inFocus ? 0.55 : 0.15}
-              />
-            );
-          })}
-        </g>
-
-        {nodes.map((node) => {
-          const r = nodeRadius(node);
-          const color = nodeColor(node);
-          const isFocus = focusNode?.id === node.id;
-          const dim = neighbours && !neighbours.has(node.id);
-          return (
-            <g
-              key={node.id}
-              transform={`translate(${node.x},${node.y})`}
-              style={{ cursor: "pointer" }}
-              opacity={dim ? 0.22 : 1}
-              onMouseEnter={() => setHovered(node.id)}
-              onMouseLeave={() => setHovered(null)}
-              onClick={() => setSelected(isFocus ? null : node)}
-            >
-              {node.is_bridge && (
-                <circle
-                  r={r + 4}
-                  fill="none"
-                  stroke="#F0A92C"
-                  strokeWidth={1.5}
-                  strokeDasharray="3 2"
-                />
-              )}
-              <circle
-                r={isFocus ? r + 2 : r}
-                fill={color}
-                fillOpacity={isFocus ? 1 : 0.85}
-                stroke={isFocus ? "#E6ECF5" : "none"}
-                strokeWidth={1.5}
-              />
-              {r > 8 && (
-                <text
-                  textAnchor="middle"
-                  dy="0.35em"
-                  fontSize={Math.min(r * 0.75, 9)}
-                  fill="#0B1220"
-                  fontWeight="700"
-                  style={{ pointerEvents: "none", userSelect: "none" }}
-                >
-                  {node.label}
-                </text>
-              )}
-            </g>
-          );
-        })}
-      </svg>
-
-      {focusNode && (
-        <div className="absolute top-3 right-3 bg-surface-2 border border-bdr-strong rounded-xl p-3 text-xs space-y-1 min-w-[11rem] shadow-pop pointer-events-none">
-          <p className="font-bold text-ink font-mono">{focusNode.label}</p>
-          <p className="text-ink-3 capitalize">{focusNode.platform}</p>
-          <p className="text-ink-2">
-            Posts <span className="font-semibold text-ink tabular-nums">{focusNode.post_count}</span>
-          </p>
-          <p className="text-ink-2">
-            PageRank{" "}
-            <span className="font-semibold text-ink tabular-nums">
-              {focusNode.pagerank.toFixed(4)}
-            </span>
-          </p>
-          <p className="text-ink-2">
-            Topics{" "}
-            <span className="font-semibold text-ink tabular-nums">{focusNode.topic_count}</span>
-          </p>
-          <p className="text-ink-2">
-            Community{" "}
-            <span
-              className="font-semibold"
-              style={{ color: communityColor(focusNode.community_id) }}
-            >
-              C{focusNode.community_id + 1}
-            </span>
-          </p>
-          {focusNode.is_bridge && <p className="text-warn font-semibold">⚡ bridge actor</p>}
-          <p className={cn("capitalize font-semibold", sentimentColor(focusNode.dominant_sentiment))}>
-            {focusNode.dominant_sentiment}
-          </p>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -382,7 +89,7 @@ export default function NetworkPage() {
               ) : (
                 <p className="text-base font-bold tabular-nums text-ink">{chip.value}</p>
               )}
-              <p className="text-[9px] text-ink-3 uppercase tracking-widest mt-0.5">
+              <p className="label mt-0.5">
                 {chip.label}
               </p>
             </Card>
@@ -424,7 +131,7 @@ export default function NetworkPage() {
         />
         {tab === "graph" && (
           <>
-            <span className="text-[10px] text-ink-3 uppercase tracking-widest">Colour by</span>
+            <span className="label">Colour by</span>
             <Segmented
               value={colorBy}
               onChange={setColorBy}
@@ -471,7 +178,7 @@ export default function NetworkPage() {
                   </div>
                 )}
 
-                <GraphCanvas graph={graph} colorBy={colorBy} highlight={highlight} />
+                <ForceGraph graph={graph} colorBy={colorBy} highlight={highlight} />
 
                 <div className="flex flex-wrap gap-3 mt-3">
                   {colorBy === "community" &&
@@ -484,7 +191,7 @@ export default function NetworkPage() {
                     ))}
                   {colorBy === "sentiment" &&
                     (["positive", "neutral", "negative"] as const).map((s) => (
-                      <Legend key={s} color={NODE_SENTIMENT[s]} label={s} />
+                      <Legend key={s} color={sentimentFill(s)} label={s} />
                     ))}
                   <span className="inline-flex items-center gap-1.5 text-[10px] text-warn">
                     <span className="w-2.5 h-2.5 rounded-full border border-warn" />

@@ -67,7 +67,7 @@ export function CardHeader({
         </div>
       )}
       <div className="min-w-0 flex-1">
-        <h3 className="text-[13px] font-semibold text-ink leading-tight tracking-tight">
+        <h3 className="font-display text-[13.5px] font-semibold text-ink leading-tight tracking-[-0.01em]">
           {title}
         </h3>
         {subtitle && (
@@ -75,7 +75,7 @@ export function CardHeader({
         )}
       </div>
       {hint && (
-        <span className="text-[10px] text-ink-3 uppercase tracking-wider flex-shrink-0 mt-1">
+        <span className="label flex-shrink-0 mt-1">
           {hint}
         </span>
       )}

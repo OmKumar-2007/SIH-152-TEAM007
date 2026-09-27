@@ -47,6 +47,7 @@ function ModelRow({ model, loading }: { model: ModelStatus; loading: boolean }) 
     "emotion": "Emotion (DistilRoBERTa)",
     "irony": "Sarcasm (RoBERTa-irony)",
     "embedding": "Embeddings (MiniLM-L12)",
+    "zero_shot": "Zero-shot (mDeBERTa-XNLI)",
   };
   return (
     <div className="flex items-center justify-between px-5 py-3 gap-4">

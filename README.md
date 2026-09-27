@@ -160,8 +160,8 @@ This runs: `docker compose up` (postgres + redis + backend + worker + beat + fro
 | Service      | URL                              |
 |-------------|----------------------------------|
 | Dashboard    | http://localhost:3000            |
-| API docs     | http://localhost:8000/api/docs   |
-| Backend      | http://localhost:8000            |
+| API docs     | http://localhost:8080/api/docs   |
+| Backend      | http://localhost:8080            |
 
 Default login: `admin@sih.gov.in` / `Admin@SIH2026`
 
@@ -191,7 +191,7 @@ cp ../.env.example .env
 # Edit DATABASE_URL, REDIS_URL
 
 # Run migrations and start
-uvicorn app.main:app --reload --port 8000
+uvicorn app.main:app --reload --port 8080
 ```
 
 In separate terminals:

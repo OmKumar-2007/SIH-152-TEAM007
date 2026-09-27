@@ -14,7 +14,6 @@ import {
   PieChart,
   Settings,
   Share2,
-  ShieldCheck,
   TrendingUp,
   Users,
 } from "lucide-react";
@@ -24,6 +23,7 @@ import { clearAuth, getStoredUser } from "@/lib/auth";
 import { authApi } from "@/lib/api";
 import { useConnectors, useDashboard } from "@/lib/queries";
 import { StatusDot } from "@/components/ui";
+import { NitiNetraMark, NitiNetraWordmark } from "@/components/brand/logo";
 
 type NavItem = {
   href: string;
@@ -53,11 +53,12 @@ const GROUPS: { label: string; items: NavItem[] }[] = [
     label: "Audience",
     items: [
       { href: "/demographics", icon: PieChart, label: "Demographics" },
-      { href: "/audience", icon: Users, label: "Audience" },
       {
-        href: "/segments",
-        icon: Layers,
-        label: "Segments",
+        // Personas and segments are two views of one page now, so this is one
+        // entry carrying the segment count rather than two competing ones.
+        href: "/audience",
+        icon: Users,
+        label: "Audience",
         count: (d) => d.active_segments || null,
       },
     ],
@@ -83,6 +84,7 @@ export function Sidebar() {
   // markup without the user block while the client emits it with — a hydration
   // mismatch that React resolves by discarding and re-rendering the whole tree.
   const [user, setUser] = useState<ReturnType<typeof getStoredUser>>(null);
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   useEffect(() => {
     setUser(getStoredUser());
   }, []);
@@ -99,22 +101,22 @@ export function Sidebar() {
 
   const healthy = connectors?.filter((c) => c.is_healthy).length ?? 0;
   const total = connectors?.length ?? 0;
-  const live = connectors?.some((c) => c.mode === "live") ?? false;
+  // The corpus is a deliberate mix: platforms with working credentials run live,
+  // the rest contribute through their synthetic generator. "live" vs "mock" as a
+  // single boolean could not say that — it reported the whole estate as "live"
+  // the moment any one connector was, which is the least useful reading.
+  const liveCount = connectors?.filter((c) => c.mode === "live").length ?? 0;
+  const synthCount = connectors?.filter((c) => c.mode === "synthetic").length ?? 0;
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-60 bg-surface border-r border-bdr flex flex-col z-40">
+    <>
+    <aside className="fixed left-0 top-0 h-screen w-60 bg-surface border-r border-bdr hidden md:flex flex-col z-40">
       <div className="px-5 py-4 border-b border-bdr">
-        <Link href="/dashboard" className="flex items-center gap-3 group">
-          <div className="w-8 h-8 rounded-lg bg-brand/10 flex items-center justify-center flex-shrink-0">
-            <ShieldCheck className="w-4 h-4 text-brand" />
-          </div>
+        <Link href="/dashboard" className="flex items-center gap-2.5 group">
+          <NitiNetraMark size={40} className="text-[#1F3A5F] dark:text-ink" />
           <div className="min-w-0">
-            <div className="text-sm font-bold text-ink leading-tight group-hover:text-brand transition-colors">
-              SIH Intelligence
-            </div>
-            <div className="text-[10px] text-ink-3 uppercase tracking-widest">
-              Analytics Platform
-            </div>
+            <NitiNetraWordmark className="block text-[15px] text-[#1F3A5F] dark:text-ink group-hover:text-brand transition-colors" />
+            <div className="label mt-1">Policy intelligence</div>
           </div>
         </Link>
 
@@ -124,23 +126,28 @@ export function Sidebar() {
           a connector had fallen over, which is the one thing this slot is
           well placed to say.
         */}
-        <div className="mt-3 flex items-center gap-2 px-2.5 py-1.5 bg-surface-2 rounded-lg">
-          <StatusDot
-            live={total > 0 && healthy === total}
-            tone={total === 0 ? "idle" : healthy === total ? "success" : healthy ? "warn" : "danger"}
-          />
-          <span className="text-[10px] font-semibold text-ink-2 uppercase tracking-wider">
-            {total === 0
-              ? "Connectors unknown"
-              : `${healthy}/${total} connectors ${live ? "live" : "mock"}`}
-          </span>
+        <div className="mt-3 px-2.5 py-2 bg-surface-2 rounded-lg">
+          <div className="flex items-center gap-2">
+            <StatusDot
+              live={total > 0 && healthy === total}
+              tone={total === 0 ? "idle" : healthy === total ? "success" : healthy ? "warn" : "danger"}
+            />
+            <span className="text-[11px] font-semibold text-ink-2">
+              {total === 0 ? "Connectors unknown" : `${healthy} of ${total} connectors`}
+            </span>
+          </div>
+          {total > 0 && (
+            <p className="text-[10px] text-ink-3 mt-1 pl-4 tabular-nums">
+              {liveCount} live · {synthCount} synthetic
+            </p>
+          )}
         </div>
       </div>
 
       <nav className="flex-1 px-3 py-4 overflow-y-auto space-y-4">
         {GROUPS.map((group) => (
           <div key={group.label} className="space-y-0.5">
-            <p className="text-[10px] font-bold text-ink-3 uppercase tracking-widest px-2 pb-2">
+            <p className="label font-semibold px-2 pb-2">
               {group.label}
             </p>
             {group.items.map((item) => {
@@ -209,5 +216,91 @@ export function Sidebar() {
         )}
       </div>
     </aside>
+
+    <>
+      {mobileMoreOpen && (
+        <div className="fixed inset-0 z-40 md:hidden" role="presentation">
+          <button
+            aria-label="Close navigation menu"
+            className="absolute inset-0 bg-black/40 backdrop-blur-[2px]"
+            onClick={() => setMobileMoreOpen(false)}
+          />
+          <div className="absolute inset-x-3 bottom-[4.5rem] rounded-2xl border border-bdr bg-surface p-3 shadow-pop">
+            <p className="label px-2 pb-2">All pages</p>
+            <div className="grid grid-cols-2 gap-1">
+              {[
+                { href: "/timeline", icon: Clock, label: "Timeline" },
+                { href: "/demographics", icon: PieChart, label: "Demographics" },
+                { href: "/diffusion", icon: Share2, label: "Diffusion" },
+                { href: "/simulation", icon: FlaskConical, label: "Policy simulation" },
+                { href: "/settings", icon: Settings, label: "Settings" },
+              ].map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileMoreOpen(false)}
+                  className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-medium text-ink-2 hover:bg-surface-2 hover:text-ink"
+                >
+                  <item.icon className="h-4 w-4 text-ink-3" />
+                  {item.label}
+                </Link>
+              ))}
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs font-medium text-danger hover:bg-danger/10"
+              >
+                <LogOut className="h-4 w-4" />
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <nav
+        aria-label="Mobile navigation"
+        className="fixed inset-x-0 bottom-0 z-50 md:hidden h-16 bg-surface/95 backdrop-blur-xl border-t border-bdr px-2 pb-[env(safe-area-inset-bottom)]"
+      >
+        <div className="h-full flex items-center justify-around gap-1">
+          {[
+          { href: "/dashboard", icon: LayoutDashboard, label: "Overview" },
+          { href: "/trends", icon: TrendingUp, label: "Trends" },
+          { href: "/sentiment", icon: MessageSquare, label: "Sentiment" },
+          { href: "/audience", icon: Users, label: "Audience" },
+          { href: "/network", icon: Network, label: "Network" },
+        ].map((item) => {
+          const active = pathname === item.href || pathname.startsWith(item.href + "/");
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              aria-label={item.label}
+              className={cn(
+                "min-w-0 flex-1 flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[9px] font-medium transition-colors",
+                active ? "bg-brand/10 text-brand" : "text-ink-3 hover:text-ink"
+              )}
+            >
+              <item.icon className="w-4 h-4" />
+              <span className="truncate max-w-full">{item.label}</span>
+            </Link>
+          );
+        })}
+          <button
+            type="button"
+            aria-label="More pages"
+            aria-expanded={mobileMoreOpen}
+            onClick={() => setMobileMoreOpen((open) => !open)}
+            className={cn(
+              "min-w-0 flex-1 flex flex-col items-center justify-center gap-1 rounded-lg py-1.5 text-[9px] font-medium transition-colors",
+              mobileMoreOpen ? "bg-brand/10 text-brand" : "text-ink-3 hover:text-ink"
+            )}
+          >
+            <Layers className="w-4 h-4" />
+            <span>More</span>
+          </button>
+        </div>
+      </nav>
+    </>
+    </>
   );
 }

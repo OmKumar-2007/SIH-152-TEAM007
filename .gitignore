@@ -49,3 +49,17 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+backend/.hf_cache/
+backend/.venv/
+backend/__pycache__/
+backend/**/*.pyc
+backend/*.db
+backend/*.db-*
+backend/*.db.bak*
+backend/celerybeat-schedule*
+backend/dc/*.session
+backend/dc/*.session-journal
+backend/dc/cookies.json
+backend/.env
+dc/cookies.json
+.runlogs/

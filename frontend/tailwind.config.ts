@@ -65,6 +65,15 @@ const config: Config = {
           "Segoe UI",
           "sans-serif",
         ],
+        // Headings and headline figures. Falls back to the body stack, so a
+        // failed font fetch degrades to Inter rather than to Times.
+        display: [
+          "var(--font-display)",
+          "var(--font-inter)",
+          "ui-sans-serif",
+          "system-ui",
+          "sans-serif",
+        ],
         mono: ["ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       borderRadius: {

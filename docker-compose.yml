@@ -5,6 +5,7 @@ x-backend-env: &backend-env
   REDIS_URL: redis://redis:6379/0
   USE_REAL_NLP: ${USE_REAL_NLP:-false}
   DEMO_MODE: ${DEMO_MODE:-true}
+  SYNTHETIC_DEMO_MODE: ${SYNTHETIC_DEMO_MODE:-true}
   SECRET_KEY: ${SECRET_KEY:-dev-secret-key-change-in-production}
   ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@sih.gov.in}
   ADMIN_PASSWORD: ${ADMIN_PASSWORD:-Admin@SIH2026}

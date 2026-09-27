@@ -15,60 +15,74 @@
   so there is no flash of the wrong theme.
 */
 
+/*
+  The neutrals carry a little warmth, and that is deliberate.
+
+  The previous ramp was pure slate — `15 23 42` ink on a `246 248 251` ground,
+  with GitHub's `13 17 23` in dark. Those are the Tailwind defaults, and a
+  product built entirely from framework defaults reads as a template no matter
+  how good the layout is. Shifting the greys a few points off blue costs nothing
+  and stops the interface looking like it was generated rather than designed.
+
+  Warm greys also sit better under long reading: a blue-black on a blue-white
+  ground is the highest-contrast, coldest pairing available, and this is a
+  dashboard someone stares at for an hour.
+*/
+
 :root {
-  --bg: 246 248 251;
-  --bg-alt: 241 244 249;
+  --bg: 249 248 246;
+  --bg-alt: 244 242 239;
   --surface: 255 255 255;
-  --surface-2: 244 247 251;
-  --surface-3: 235 240 247;
-  --bdr: 226 232 240;
-  --bdr-strong: 203 213 225;
+  --surface-2: 245 243 240;
+  --surface-3: 237 234 230;
+  --bdr: 229 225 219;
+  --bdr-strong: 206 200 192;
 
-  --ink: 15 23 42;
-  --ink-2: 71 85 105;
-  --ink-3: 138 152 171;
+  --ink: 28 27 26;
+  --ink-2: 92 88 83;
+  --ink-3: 143 137 130;
 
-  --brand: 37 99 235;
-  --brand-soft: 219 234 254;
-  --accent: 124 58 237;
+  --brand: 41 98 178;
+  --brand-soft: 219 232 248;
+  --accent: 124 86 178;
 
-  --success: 22 163 74;
-  --danger: 225 29 72;
-  --warn: 217 119 6;
-  --info: 2 132 199;
+  --success: 30 138 92;
+  --danger: 199 58 66;
+  --warn: 186 114 24;
+  --info: 32 118 168;
 
-  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
-  --shadow-pop: 0 12px 32px -8px rgba(15, 23, 42, 0.18);
-  --grid-line: rgba(15, 23, 42, 0.06);
+  --shadow-card: 0 1px 2px rgba(28, 27, 26, 0.05), 0 1px 3px rgba(28, 27, 26, 0.04);
+  --shadow-pop: 0 12px 32px -8px rgba(28, 27, 26, 0.16);
+  --grid-line: rgba(28, 27, 26, 0.07);
 
   color-scheme: light;
 }
 
 [data-theme="dark"] {
-  --bg: 13 17 23;
-  --bg-alt: 17 22 30;
-  --surface: 22 27 34;
-  --surface-2: 28 35 45;
-  --surface-3: 35 44 57;
-  --bdr: 37 48 63;
-  --bdr-strong: 55 71 92;
+  --bg: 19 19 20;
+  --bg-alt: 23 23 25;
+  --surface: 27 27 29;
+  --surface-2: 34 34 37;
+  --surface-3: 43 43 47;
+  --bdr: 46 46 50;
+  --bdr-strong: 66 66 71;
 
-  --ink: 230 237 243;
-  --ink-2: 154 169 188;
-  --ink-3: 107 122 143;
+  --ink: 238 237 234;
+  --ink-2: 167 164 158;
+  --ink-3: 122 119 114;
 
-  --brand: 88 140 255;
-  --brand-soft: 27 44 84;
-  --accent: 167 139 250;
+  --brand: 118 162 235;
+  --brand-soft: 30 42 64;
+  --accent: 178 148 228;
 
-  --success: 52 211 153;
-  --danger: 251 113 133;
-  --warn: 251 191 36;
-  --info: 56 189 248;
+  --success: 78 195 138;
+  --danger: 232 116 118;
+  --warn: 224 168 74;
+  --info: 98 178 226;
 
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.45);
   --shadow-pop: 0 16px 40px -12px rgba(0, 0, 0, 0.7);
-  --grid-line: rgba(230, 237, 243, 0.06);
+  --grid-line: rgba(238, 237, 234, 0.07);
 
   color-scheme: dark;
 }
@@ -119,6 +133,34 @@ body {
 
 .tabular-nums {
   font-variant-numeric: tabular-nums;
+}
+
+/*
+  The small label above a value.
+
+  This used to be written inline everywhere as
+  `text-[10px] uppercase tracking-widest`. Small caps at wide tracking is the
+  single most recognisable stock-dashboard tell — and at 10px it is genuinely
+  harder to read than the sentence case it replaced, because uppercase removes
+  the ascender/descender shapes the eye uses to recognise a word.
+
+  Sentence case, one step larger, in the muted ink. Quieter and more legible at
+  the same time.
+*/
+.label {
+  font-size: 11px;
+  line-height: 1.3;
+  font-weight: 500;
+  letter-spacing: 0.005em;
+  color: rgb(var(--ink-3));
+}
+
+/* Headline figures: display face, tight, lining tabular numerals. */
+.figure {
+  font-family: var(--font-display), var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  font-variant-numeric: tabular-nums lining-nums;
 }
 
 .recharts-wrapper:focus,

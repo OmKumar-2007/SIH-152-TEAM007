@@ -1,0 +1,72 @@
+[
+  {
+    "id": "fuel_price",
+    "display_name": "Fuel Prices",
+    "keywords": ["fuel", "petrol", "diesel", "gas", "lpg", "cng", "price hike"]
+  },
+  {
+    "id": "public_exam_integrity",
+    "display_name": "Public Exam Integrity",
+    "keywords": ["exam", "leak", "paper leak", "neet", "jee", "upsc", "ssc", "cheating", "scam"]
+  },
+  {
+    "id": "ai_governance",
+    "display_name": "AI & Governance",
+    "keywords": ["ai", "artificial intelligence", "governance", "deepfake", "regulation", "tech policy"]
+  },
+  {
+    "id": "agri_msp",
+    "display_name": "Agriculture & MSP",
+    "keywords": ["msp", "farmer", "agriculture", "kisan", "crop", "protest", "minimum support price", "mandi"]
+  },
+  {
+    "id": "digital_public_infra",
+    "display_name": "Digital Public Infrastructure",
+    "keywords": ["upi", "aadhaar", "digilocker", "digital india", "payment", "fintech", "dpi"]
+  },
+  {
+    "id": "employment_scheme",
+    "display_name": "Employment & Schemes",
+    "keywords": ["employment", "job", "scheme", "mgnrega", "unemployment", "rozgar", "recruitment", "vacancy"]
+  },
+  {
+    "id": "education_reform",
+    "display_name": "Education Reform",
+    "keywords": ["education", "nep", "school", "university", "syllabus", "curriculum", "student"]
+  },
+  {
+    "id": "climate_adaptation",
+    "display_name": "Climate Adaptation",
+    "keywords": ["climate", "weather", "flood", "heatwave", "drought", "monsoon", "pollution", "environment"]
+  },
+  {
+    "id": "urban_transit",
+    "display_name": "Urban Transit",
+    "keywords": ["metro", "transit", "traffic", "train", "vande bharat", "railway", "bus", "transport"]
+  },
+  {
+    "id": "data_privacy",
+    "display_name": "Data Privacy",
+    "keywords": ["privacy", "data protection", "dpdp", "breach", "cyber", "hacked", "security"]
+  },
+  {
+    "id": "public_health",
+    "display_name": "Public Health",
+    "keywords": ["health", "hospital", "doctor", "medicine", "dengue", "malaria", "virus", "vaccine", "outbreak"]
+  },
+  {
+    "id": "startup_funding",
+    "display_name": "Startup & Funding",
+    "keywords": ["startup", "funding", "investor", "vc", "valuation", "unicorn", "founder", "entrepreneur"]
+  },
+  {
+    "id": "semiconductor_mission",
+    "display_name": "Semiconductor Mission",
+    "keywords": ["semiconductor", "chip", "manufacturing", "fab", "electronics", "make in india"]
+  },
+  {
+    "id": "water_sharing",
+    "display_name": "Water Sharing",
+    "keywords": ["water", "river", "sharing", "dam", "cauvery", "irrigation", "dispute"]
+  }
+]

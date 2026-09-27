@@ -171,19 +171,19 @@ export function useModelStatus(opts?: Opts<ModelStatus[]>) {
 
 // ── Trends ────────────────────────────────────────────────────────────────────
 
-export function useTrends(limit = 20, opts?: Opts<TrendSummary[]>) {
+export function useTrends(limit = 20, opts?: Opts<Awaited<ReturnType<typeof trendsApi.list>>["data"]>) {
   return useQuery({
     queryKey: keys.trends(limit),
-    queryFn: async () => (await trendsApi.list(limit)).data.items,
+    queryFn: async () => (await trendsApi.list(limit)).data,
     refetchInterval: FREQUENT,
     ...opts,
   });
 }
 
-export function useEmergingTrends(opts?: Opts<TrendSummary[]>) {
+export function useEmergingTrends(opts?: Opts<Awaited<ReturnType<typeof trendsApi.emerging>>["data"]>) {
   return useQuery({
     queryKey: keys.emerging,
-    queryFn: async () => (await trendsApi.emerging()).data.items,
+    queryFn: async () => (await trendsApi.emerging()).data,
     refetchInterval: FREQUENT,
     ...opts,
   });
