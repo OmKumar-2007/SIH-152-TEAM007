@@ -1,4 +1,4 @@
-# SIH Intelligence Platform — Developer Makefile
+# NitiNetra — Developer Makefile
 # Usage: make <target>
 
 .PHONY: help up down build seed logs ps restart clean
@@ -7,7 +7,7 @@
 
 help:
 	@echo ""
-	@echo "  SIH Intelligence Platform"
+	@echo "  NitiNetra"
 	@echo "  ─────────────────────────"
 	@echo "  make up        Start all core services (postgres, redis, backend, worker, beat, frontend)"
 	@echo "  make seed      Populate the database with ~2 000 realistic demo posts"

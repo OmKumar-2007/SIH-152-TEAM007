@@ -1,4 +1,4 @@
-# SIH Intelligence Platform
+# NitiNetra
 
 > AI-powered social-media intelligence for understanding public sentiment, emerging narratives, audience segments, and information diffusion.
 

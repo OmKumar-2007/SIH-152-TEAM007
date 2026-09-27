@@ -1,10 +1,10 @@
 @echo off
 setlocal
-title SIH Intelligence Platform - Launcher
+title NitiNetra - Launcher
 cd /d "%~dp0"
 
 echo ============================================================
-echo   SIH Intelligence Platform
+echo   NitiNetra
 echo ============================================================
 echo.
 

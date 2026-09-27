@@ -1,7 +1,7 @@
 # Dynamic Persona Analysis Pipeline — PS26152
 
 Design and implementation record for the persona-analysis pipeline built on top
-of the existing SIH Intelligence Platform.
+of the existing NitiNetra platform.
 
 Every section marks components as **EXISTING**, **MODIFIED** or **NEW**, so the
 diff against the prior architecture is legible.
